@@ -1,0 +1,11 @@
+# Include the Python package
+recursive-include src/python/fastrvm
+
+# Include the C++ sources for building the extension
+recursive-include src/cpp *.cpp *.hpp
+recursive-include src/cpp CMakeLists.txt
+
+# Include README and other metadata files
+include README.md
+include pyproject.toml
+include LICENSE
