@@ -69,7 +69,7 @@ See `docs/fastrvm.md` for a short reference doc.
 
 ## Installation from Source
 
-For development or to build against a specific BLAS/LAPACK provider, install from source:
+For development install from source:
 
 ```bash
 git clone https://github.com/brdav/fastrvm.git
@@ -86,6 +86,13 @@ Minimum build dependencies
 - BLAS/LAPACK implementation (OpenBLAS, MKL, or Accelerate)
 
 Note: Builds on Windows are untested in CI. You can attempt a Windows build but expect manual steps.
+
+The C++ core (sparse Bayesian learning algorithm) can also be built independently:
+
+```bash
+cmake -S src/cpp -B build/cpp -DCMAKE_BUILD_TYPE=Release
+cmake --build build/cpp --target sparsebayes -j
+```
 
 ## Citation
 

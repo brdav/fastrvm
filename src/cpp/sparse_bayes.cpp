@@ -146,13 +146,17 @@ void SparseBayes::Inference(const arma::mat& basis_in,
     if (verbose_ && (iter % 10 == 0)) {
       if (likelihood_ == Likelihood::kGaussian) {
         printf(
-            "Iter %3d: M=%3d, L=%.6f, Gamma=%.2f, s=%.3f, act=%d on %d (%g)\n",
-            iter, M, logML / N, arma::sum(Gamma), std::sqrt(1 / state.beta),
-            static_cast<int>(selected_action), nu, delta_log_marginal);
+            "Iter %3d: M=%3llu, L=%.6f, Gamma=%.2f, s=%.3f, act=%d on %llu "
+            "(%g)\n",
+            iter, static_cast<unsigned long long>(M), logML / N,
+            arma::sum(Gamma), std::sqrt(1 / state.beta),
+            static_cast<int>(selected_action),
+            static_cast<unsigned long long>(nu), delta_log_marginal);
       } else {
-        printf("Iter %3d: M=%3d, L=%.6f, Gamma=%.2f, act=%d on %d (%g)\n", iter,
-               M, logML / N, arma::sum(Gamma),
-               static_cast<int>(selected_action), nu, delta_log_marginal);
+        printf("Iter %3d: M=%3llu, L=%.6f, Gamma=%.2f, act=%d on %llu (%g)\n",
+               iter, static_cast<unsigned long long>(M), logML / N,
+               arma::sum(Gamma), static_cast<int>(selected_action),
+               static_cast<unsigned long long>(nu), delta_log_marginal);
       }
     }
 
@@ -263,7 +267,7 @@ SparseBayes::ModelState SparseBayes::Initialize(const arma::mat& basis,
   if (verbose_) {
     printf("Initial basis function(s): ");
     for (arma::uword i = 0; i < used_basis_idx.n_elem; ++i) {
-      printf("%d ", used_basis_idx(i));
+      printf("%llu ", static_cast<unsigned long long>(used_basis_idx(i)));
     }
     printf("\n");
   }
