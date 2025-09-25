@@ -1,24 +1,32 @@
+// Copyright 2025 brdav
+//
+// Use of this source code is governed by an MIT-style
+// license that can be found in the LICENSE file or at
+// https://opensource.org/licenses/MIT.
+
 #include "sparse_bayes.hpp"
 
 namespace sparse_bayes {
 
 // Update statistics after an action. For non-Gaussian likelihoods this may
 // recompute full statistics; for Gaussian we update via cheaper formulas.
-void SparseBayes::update_after_action(
+void SparseBayes::UpdateAfterAction(
     ModelState &state, Action selected_action, const arma::mat &basis,
     const arma::vec &targets_in, const arma::mat &basis_targets, double &logML,
     arma::vec &Gamma, double &delta_log_marginal, int &ll_update_count) {
-  if (selected_action == Action::Reestimate || selected_action == Action::Add ||
-      selected_action == Action::Delete) {
-    if (likelihood_ == Likelihood::Gaussian) {
+  if (selected_action == Action::kReestimate ||
+      selected_action == Action::kAdd || selected_action == Action::kDelete) {
+    if (likelihood_ == Likelihood::kGaussian) {
       state.S_out = state.S_in;
       state.Q_out = state.Q_in;
+
       arma::vec tmp =
           state.alpha / (state.alpha - state.S_in.elem(state.used_basis_idx));
       state.S_out.elem(state.used_basis_idx) =
           state.S_in.elem(state.used_basis_idx) % tmp;
       state.Q_out.elem(state.used_basis_idx) =
           state.Q_in.elem(state.used_basis_idx) % tmp;
+
       state.relevance_factor = arma::square(state.Q_out) - state.S_out;
 
       Gamma = arma::ones<arma::vec>(state.alpha.n_elem) -
@@ -32,9 +40,10 @@ void SparseBayes::update_after_action(
                delta_log_marginal);
       }
     } else {
-      FullStatisticsResult full_stat = compute_full_statistics(
+      FullStatisticsResult full_stat = ComputeFullStatistics(
           basis, state.Phi, targets_in, state.used_basis_idx, state.basis_Phi,
           basis_targets, state.weights, state.alpha, state.beta);
+
       state.weights = full_stat.weights;
       state.Sigma = full_stat.Sigma;
       state.S_in = full_stat.S_in;
@@ -46,10 +55,10 @@ void SparseBayes::update_after_action(
       state.b_vec = full_stat.b_vec;
 
       Gamma = full_stat.Gamma;
-      // we update logML below
       delta_log_marginal = full_stat.logML - logML;
     }
-    logML = logML + delta_log_marginal;
+
+    logML += delta_log_marginal;
     ll_update_count++;
   }
 }
@@ -57,15 +66,15 @@ void SparseBayes::update_after_action(
 // Update beta (Gaussian noise precision) when appropriate. If beta changes
 // significantly, recompute full statistics and possibly defer termination by
 // modifying selected_action.
-void SparseBayes::maybe_update_beta(ModelState &state, const arma::mat &basis,
-                                    const arma::vec &targets_in,
-                                    const arma::mat &basis_targets,
-                                    double &logML, arma::vec &Gamma,
-                                    int &ll_update_count, int iter,
-                                    Action &selected_action) {
-  if (likelihood_ != Likelihood::Gaussian)
+void SparseBayes::MaybeUpdateBeta(ModelState &state, const arma::mat &basis,
+                                  const arma::vec &targets_in,
+                                  const arma::mat &basis_targets, double &logML,
+                                  arma::vec &Gamma, int &ll_update_count,
+                                  int iter, Action &selected_action) {
+  if (likelihood_ != Likelihood::kGaussian) {
     throw std::logic_error(
-        "maybe_update_beta called for non-Gaussian likelihood");
+        "MaybeUpdateBeta called for non-Gaussian likelihood");
+  }
 
   // If fixed_noise_ is true, never update beta
   if (fixed_noise_) {
@@ -73,8 +82,8 @@ void SparseBayes::maybe_update_beta(ModelState &state, const arma::mat &basis,
   }
 
   // Determine whether we should attempt a beta update this iteration
-  if (!(selected_action == Action::Terminate || iter < BETA_WARMUP_ITER ||
-        (iter + 1) % BETA_UPDATE_FREQUENCY == 0)) {
+  if (!(selected_action == Action::kTerminate || iter < kBetaWarmupIter ||
+        (iter + 1) % kBetaUpdateFrequency == 0)) {
     return;
   }
 
@@ -86,14 +95,15 @@ void SparseBayes::maybe_update_beta(ModelState &state, const arma::mat &basis,
   double ED = arma::dot(e, e);
 
   new_beta = (static_cast<double>(N) - arma::sum(Gamma)) / ED;
-  // Bound the change in beta to avoid instability
-  new_beta = std::min(new_beta, BETA_MAX_FACTOR / arma::var(targets_in));
-  double delta_log_beta = std::log(new_beta) - std::log(state.beta);
 
+  // Bound the change in beta to avoid instability
+  new_beta = std::min(new_beta, kBetaMaxFactor / arma::var(targets_in));
+
+  double delta_log_beta = std::log(new_beta) - std::log(state.beta);
   state.beta = new_beta;
 
-  if (std::abs(delta_log_beta) > MIN_DELTA_LOG_BETA) {
-    FullStatisticsResult full_stat = compute_full_statistics(
+  if (std::abs(delta_log_beta) > kMinDeltaLogBeta) {
+    FullStatisticsResult full_stat = ComputeFullStatistics(
         basis, state.Phi, targets_in, state.used_basis_idx, state.basis_Phi,
         basis_targets, state.weights, state.alpha, state.beta);
 
@@ -108,13 +118,15 @@ void SparseBayes::maybe_update_beta(ModelState &state, const arma::mat &basis,
 
     logML = full_stat.logML;
     Gamma = full_stat.Gamma;
-
     ll_update_count++;
 
-    if (selected_action == Action::Terminate) {
-      // If we were going to terminate, but beta changed significantly, continue
-      selected_action = Action::NoiseOnly;
-      if (verbose_) printf("Noise update (termination deferred)\n");
+    if (selected_action == Action::kTerminate) {
+      // If we were going to terminate, but beta changed significantly,
+      // continue instead.
+      selected_action = Action::kNoiseOnly;
+      if (verbose_) {
+        printf("Noise update (termination deferred)\n");
+      }
     }
   }
 }

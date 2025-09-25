@@ -34,16 +34,19 @@ class RVC(ClassifierMixin, BaseEstimator):
 
     Attributes:
         n_features_in_ (int): Number of features seen during fit.
-        relevance_ (ndarray): Indices of relevance vectors selected by the model.
-        relevance_vectors_ (ndarray): Relevance vectors (subset of training X).
-        dual_coef_ (ndarray): Dual coefficients for the relevance vectors.
-        coef_ (ndarray): Weights assigned to the features when using a linear kernel.
-        intercept_ (ndarray): Intercept term (0.0 if fit_intercept=False).
-        alpha_ (ndarray): Precision (inverse variance) for the weights.
-        n_relevance_ (ndarray): Number of relevance vectors.
-        n_iter_ (ndarray): Number of iterations run by the SparseBayes solver.
-        fit_status_ (int): Status code returned by the SparseBayes solver.
-        scores_ (ndarray): Log marginal likelihood values at each iteration. Only available for binary classifier.
+        relevance_ (ndarray of shape (n_relevance,)): Indices of relevance vectors selected by the model.
+        relevance_vectors_ (ndarray of shape (n_relevance, n_features)): Relevance vectors (subset of training X).
+        dual_coef_ (ndarray of shape (n_classifiers, n_relevance)): Dual coefficients for the relevance vectors.
+        coef_ (ndarray of shape (n_classifiers, n_features)): Weights assigned to the features when using a linear kernel.
+        intercept_ (ndarray of shape (n_classifiers,)): Intercept term.
+        alpha_ (ndarray of shape (n_classifiers, n_relevance)): Precision (inverse variance) for the weights.
+        n_relevance_ (ndarray of shape (n_classifiers,)): Number of relevance vectors.
+        n_iter_ (ndarray of shape (n_classifiers,)): Number of iterations run by the SparseBayes solver.
+        fit_status_ (int): Status code returned by the SparseBayes solver(s).
+        scores_ (ndarray of shape (n_iter,)): Log marginal likelihood values at each iteration. Only available for binary classification.
+
+    Note: In the multiclass setting, n_classifiers = n_classes binary classifiers are used (one-vs-rest classification),
+    whereas in the binary setting n_classifiers = 1.
     """
 
     def __init__(
