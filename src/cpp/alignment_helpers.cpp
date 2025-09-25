@@ -46,7 +46,8 @@ void SparseBayes::ProcessAlignmentChecks(ModelState &state,
         state.aligned_in.shed_row(idx);
         state.aligned_out.shed_row(idx);
         if (verbose_) {
-          printf("Alignment reinstatement of %d\n", idx);
+          printf("Alignment reinstatement of %llu\n",
+                 static_cast<unsigned long long>(idx));
         }
       }
     }

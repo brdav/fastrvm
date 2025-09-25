@@ -1,206 +1,56 @@
+# Build the C++ core library for sparsebayes and its dependencies.
 cmake_minimum_required(VERSION 3.18)
 
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+project(sparsebayes LANGUAGES CXX)
 
-# Allow selecting header-only Armadillo. Default to header-only to avoid runtime
-# dylib dependencies for the Python extension.
-option(HEADER_ONLY "Build Armadillo as header-only to avoid linking libarmadillo" ON)
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
 
 include(FetchContent)
 
-# --- Armadillo vendoring -------------------------------------------------
-set(ARMADILLO_VERSION 15.0.2)
-set(ARMADILLO_ARCHIVE "armadillo-${ARMADILLO_VERSION}.tar.xz")
-set(ARMADILLO_SRC_DIR "${CMAKE_SOURCE_DIR}/extern/armadillo-${ARMADILLO_VERSION}")
+# # --- Armadillo vendoring using FetchContent ------------------------------
+set(ARMADILLO_VERSION "15.0.2")
 
-# Download & extract the release tarball only when the source directory is missing.
-if (NOT EXISTS ${ARMADILLO_SRC_DIR})
-  message(STATUS "Downloading Armadillo ${ARMADILLO_VERSION} into ${CMAKE_SOURCE_DIR}/extern/")
-  file(DOWNLOAD
-    "https://sourceforge.net/projects/arma/files/${ARMADILLO_ARCHIVE}/download"
-    "${CMAKE_SOURCE_DIR}/extern/${ARMADILLO_ARCHIVE}"
-    SHOW_PROGRESS STATUS _dl_status)
-  list(GET _dl_status 0 _dl_code)
-  if (_dl_code EQUAL 0)
-    execute_process(
-      COMMAND ${CMAKE_COMMAND} -E tar xJf "${CMAKE_SOURCE_DIR}/extern/${ARMADILLO_ARCHIVE}"
-      WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/extern"
-      RESULT_VARIABLE _tar_result)
-    if (NOT _tar_result EQUAL 0)
-      message(FATAL_ERROR "Failed to extract Armadillo archive")
-    endif()
-  else()
-    message(FATAL_ERROR "Failed downloading Armadillo archive")
-  endif()
-endif()
-
-# Configure Armadillo build options before adding it as a subproject. These
-# cache variables are read by Armadillo's CMakeLists.
-set(HEADER_ONLY ${HEADER_ONLY} CACHE BOOL "Build Armadillo header-only" FORCE)
-
-# Add Armadillo as a subdirectory only if we have the sources. If not present,
-# we'll fall back to find_package() or use CARMA-provided headers.
-if (EXISTS ${ARMADILLO_SRC_DIR})
-  add_subdirectory(${ARMADILLO_SRC_DIR} ${CMAKE_BINARY_DIR}/extern/armadillo-build EXCLUDE_FROM_ALL)
-endif()
-
-# Normalize Armadillo target/headers across different Armadillo CMake layouts.
-unset(ARMADILLO_TARGET CACHE)
-if (TARGET armadillo::armadillo)
-  message(STATUS "Using Armadillo target: armadillo::armadillo")
-  set(ARMADILLO_TARGET armadillo::armadillo)
-elseif (TARGET armadillo)
-  message(STATUS "Creating alias armadillo::armadillo -> armadillo")
-  add_library(armadillo::armadillo ALIAS armadillo)
-  set(ARMADILLO_TARGET armadillo::armadillo)
-elseif (EXISTS "${ARMADILLO_SRC_DIR}/include")
-  message(STATUS "No Armadillo target exported by upstream; creating INTERFACE target pointing to headers")
-  set(ARMADILLO_INCLUDE_DIRS "${ARMADILLO_SRC_DIR}/include")
-  add_library(armadillo INTERFACE)
-  target_include_directories(armadillo INTERFACE ${ARMADILLO_INCLUDE_DIRS})
-  add_library(armadillo::armadillo ALIAS armadillo)
-  set(ARMADILLO_TARGET armadillo::armadillo)
-endif()
-
-# Provide alternative alias names some third-party projects expect. In
-# particular Ensmallen expects an imported target named `Armadillo::Armadillo`.
-# Create aliases to our normalized armadillo target when possible.
-if (NOT TARGET Armadillo::Armadillo)
-  # Prefer aliasing the concrete `armadillo` target when available. Avoid
-  # creating an ALIAS to another ALIAS (CMake will error). If the concrete
-  # `armadillo` target is missing but `armadillo::armadillo` exists, create an
-  # INTERFACE wrapper that forwards to it.
-  if (TARGET armadillo)
-    add_library(Armadillo::Armadillo ALIAS armadillo)
-  elseif (TARGET armadillo::armadillo)
-    add_library(Armadillo::Armadillo INTERFACE)
-    target_link_libraries(Armadillo::Armadillo INTERFACE armadillo::armadillo)
-  endif()
-endif()
-
-if (NOT DEFINED ARMADILLO_TARGET AND NOT DEFINED ARMADILLO_INCLUDE_DIRS)
-  message(FATAL_ERROR "Armadillo not found. Either provide sources in extern/ or install Armadillo system-wide.")
-endif()
-
-# --- Python / pybind11 ---------------------------------------------------
-find_package(Python REQUIRED COMPONENTS Interpreter Development.Module)
-find_package(pybind11 REQUIRED)
-
-### CARMA (NumPy <-> Armadillo conversions)
-# Deterministic vendored approach: require git submodule at extern/carma.
-if (NOT EXISTS ${CMAKE_SOURCE_DIR}/extern/carma/CMakeLists.txt)
-  message(FATAL_ERROR "Missing CARMA submodule. Run: git submodule update --init --recursive")
-endif()
-
-# Add CARMA. CARMA will provide a `carma::carma` target
-add_subdirectory(${CMAKE_SOURCE_DIR}/extern/carma ${CMAKE_BINARY_DIR}/extern/carma-build EXCLUDE_FROM_ALL)
-
-# Make CARMA's generated_config.h also available as config.h.
-set(CARMA_BUILD_DIR "${CMAKE_BINARY_DIR}/extern/carma-build")
-set(CARMA_GENERATED "${CARMA_BUILD_DIR}/include/carma_bits/generated_config.h")
-set(CARMA_CONFIG   "${CARMA_BUILD_DIR}/include/carma_bits/config.h")
-if(EXISTS "${CARMA_GENERATED}")
-  file(COPY "${CARMA_GENERATED}" DESTINATION "${CARMA_BUILD_DIR}/include/carma_bits/")
-  file(RENAME "${CARMA_GENERATED}" "${CARMA_CONFIG}")
-else()
-  # If not present at configure time, add a simple build-step copy so the file will exist after build.
-  add_custom_target(carma_copy_config ALL
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CARMA_GENERATED}" "${CARMA_CONFIG}"
-    BYPRODUCTS "${CARMA_CONFIG}"
-    VERBATIM)
-endif()
-
-# --- Ensmallen vendoring -------------------------------------------------
-set(ENSMALLEN_VERSION 2.22.2)
-set(ENSMALLEN_ARCHIVE "ensmallen-${ENSMALLEN_VERSION}.tar.gz")
-set(ENSMALLEN_SRC_DIR "${CMAKE_SOURCE_DIR}/extern/ensmallen-${ENSMALLEN_VERSION}")
-
-# By default we do not add the vendored Ensmallen as a subdirectory to avoid
-# running its install/export logic when included as a subproject. Projects
-# that want to force using the vendored subproject can set this option to ON.
-option(USE_ENSMALLEN_SUBDIR "Add vendored ensmallen as subdirectory instead of using a header-only INTERFACE target" OFF)
-
-# Download & extract the release tarball only when the source directory is missing.
-if (NOT EXISTS ${ENSMALLEN_SRC_DIR})
-  message(STATUS "Downloading Ensmallen ${ENSMALLEN_VERSION} into ${CMAKE_SOURCE_DIR}/extern/")
-  file(DOWNLOAD
-    "https://ensmallen.org/files/${ENSMALLEN_ARCHIVE}"
-    "${CMAKE_SOURCE_DIR}/extern/${ENSMALLEN_ARCHIVE}"
-    SHOW_PROGRESS STATUS _dl_status)
-  list(GET _dl_status 0 _dl_code)
-  if (_dl_code EQUAL 0)
-    execute_process(
-      COMMAND ${CMAKE_COMMAND} -E tar xJf "${CMAKE_SOURCE_DIR}/extern/${ENSMALLEN_ARCHIVE}"
-      WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/extern"
-      RESULT_VARIABLE _tar_result)
-    if (NOT _tar_result EQUAL 0)
-      message(FATAL_ERROR "Failed to extract Ensmallen archive")
-    endif()
-  else()
-    message(FATAL_ERROR "Failed downloading Ensmallen archive")
-  endif()
-endif()
-
-# If requested, add the vendored ensmallen subproject. Otherwise provide a
-# lightweight header-only INTERFACE target that points to the vendored
-# includes so downstream code can #include <ensmallen/...> without invoking
-# the subproject's install/export logic.
-if (USE_ENSMALLEN_SUBDIR AND EXISTS ${ENSMALLEN_SRC_DIR})
-  add_subdirectory(${ENSMALLEN_SRC_DIR} ${CMAKE_BINARY_DIR}/extern/ensmallen-build EXCLUDE_FROM_ALL)
-else()
-  # Ensure minimal armadillo target exists so projects that expect to link
-  # ensmallen -> Armadillo::Armadillo can do so without errors.
-  if (NOT TARGET armadillo AND EXISTS "${ARMADILLO_SRC_DIR}/include")
-    add_library(armadillo INTERFACE)
-    target_include_directories(armadillo INTERFACE ${ARMADILLO_SRC_DIR}/include)
-  endif()
-
-  if (NOT TARGET Armadillo::Armadillo)
-    if (TARGET armadillo)
-      add_library(Armadillo::Armadillo ALIAS armadillo)
-    elseif (TARGET armadillo::armadillo)
-      add_library(Armadillo::Armadillo INTERFACE)
-      target_link_libraries(Armadillo::Armadillo INTERFACE armadillo::armadillo)
-    endif()
-  endif()
-
-  if (NOT TARGET ensmallen)
-    add_library(ensmallen INTERFACE)
-    target_include_directories(ensmallen INTERFACE ${ENSMALLEN_SRC_DIR}/include)
-  endif()
-  if (NOT TARGET ensmallen::ensmallen)
-    add_library(ensmallen::ensmallen ALIAS ensmallen)
-  endif()
-endif()
-
-# Core library
-add_library(sparsebayes STATIC
-  ${CMAKE_SOURCE_DIR}/src/cpp/sparse_bayes.cpp
-  ${CMAKE_SOURCE_DIR}/src/cpp/alignment_helpers.cpp
-  ${CMAKE_SOURCE_DIR}/src/cpp/evaluate_helpers.cpp
-  ${CMAKE_SOURCE_DIR}/src/cpp/update_helpers.cpp
-  ${CMAKE_SOURCE_DIR}/src/cpp/action_helpers.cpp
-  ${CMAKE_SOURCE_DIR}/src/cpp/laplace.cpp
+# By setting SOURCE_SUBDIR to a non-existing path, we prevent automatic
+# add_subdirectory in FetchContent_MakeAvailable.
+# https://gitlab.kitware.com/cmake/cmake/-/issues/26220
+FetchContent_Declare(
+  armadillo_vendored
+  URL "https://sourceforge.net/projects/arma/files/armadillo-${ARMADILLO_VERSION}.tar.xz/download"
+  URL_HASH SHA256=990ab4ccb7eff1b6d70409e9aa7fa4119877ac5f5d10ba219e98460ab3e4d6eb
+  DOWNLOAD_EXTRACT_TIMESTAMP true
+  SOURCE_SUBDIR "PATH_THAT_DOES_NOT_EXIST" # Prevents automatic add_subdirectory
 )
-target_include_directories(sparsebayes PUBLIC ${CMAKE_SOURCE_DIR}/src/cpp)
+FetchContent_MakeAvailable(armadillo_vendored)
+add_library(armadillo INTERFACE)
+target_include_directories(armadillo INTERFACE "${armadillo_vendored_SOURCE_DIR}/include")
 
-# Link to normalized Armadillo target or include directories if we only have headers
-if (DEFINED ARMADILLO_TARGET)
-  target_link_libraries(sparsebayes PUBLIC ${ARMADILLO_TARGET})
-else()
-  target_include_directories(sparsebayes PUBLIC ${ARMADILLO_INCLUDE_DIRS})
-endif()
+# --- Ensmallen vendoring using FetchContent ------------------------------
+set(ENSMALLEN_VERSION "2.22.2")
 
-# Link ensmallen includes to core so code can #include <ensmallen/...>
-target_link_libraries(sparsebayes PUBLIC ensmallen::ensmallen)
+FetchContent_Declare(
+  ensmallen_vendored
+  URL "https://ensmallen.org/files/ensmallen-${ENSMALLEN_VERSION}.tar.gz"
+  URL_HASH SHA256=da9ce4bdd07f2c8d950e3797456da3152dfa5d1b0f5987a489fbe224f52e7e4f
+  DOWNLOAD_EXTRACT_TIMESTAMP true
+  SOURCE_SUBDIR "PATH_THAT_DOES_NOT_EXIST" # Prevents automatic add_subdirectory
+)
+FetchContent_MakeAvailable(ensmallen_vendored)
+add_library(ensmallen INTERFACE)
+target_include_directories(ensmallen INTERFACE "${ensmallen_vendored_SOURCE_DIR}/include")
 
-# Python extension
-pybind11_add_module(_sparsebayes_bindings MODULE ${CMAKE_SOURCE_DIR}/src/python/fastrvm/_sparsebayes_bindings.cpp)
-target_link_libraries(_sparsebayes_bindings PRIVATE sparsebayes)
-target_link_libraries(_sparsebayes_bindings PRIVATE carma::carma)
-set_target_properties(_sparsebayes_bindings PROPERTIES OUTPUT_NAME "_sparsebayes_bindings")
+# --- Core library --------------------------------------------------------
+add_library(sparsebayes STATIC
+  ${CMAKE_CURRENT_SOURCE_DIR}/sparse_bayes.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/alignment_helpers.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/evaluate_helpers.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/update_helpers.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/action_helpers.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/laplace.cpp
+)
+target_include_directories(sparsebayes PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
-## Install the package-qualified target so `_sparsebayes_bindings` can be
-## imported directly from the `fastrvm` package.
-install(TARGETS _sparsebayes_bindings DESTINATION fastrvm)
+# Link to external dependencies
+target_link_libraries(sparsebayes PUBLIC armadillo)
+target_link_libraries(sparsebayes PUBLIC ensmallen)
