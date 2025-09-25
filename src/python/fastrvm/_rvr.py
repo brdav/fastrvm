@@ -29,18 +29,18 @@ class RVR(RegressorMixin, BaseEstimator):
 
     Attributes:
         n_features_in_ (int): Number of features seen during fit.
-        relevance_ (ndarray): Indices of relevance vectors selected by the model.
-        relevance_vectors_ (ndarray): Relevance vectors (subset of training X).
-        dual_coef_ (ndarray): Dual coefficients for the relevance vectors.
-        coef_ (ndarray): Weights assigned to the features when using a linear kernel.
+        relevance_ (ndarray of shape (n_relevance,)): Indices of relevance vectors selected by the model.
+        relevance_vectors_ (ndarray of shape (n_relevance, n_features)): Relevance vectors (subset of training X).
+        dual_coef_ (ndarray of shape (1, n_relevance)): Dual coefficients for the relevance vectors.
+        coef_ (ndarray of shape (1, n_features)): Weights assigned to the features when using a linear kernel.
         intercept_ (float): Intercept term (0.0 if fit_intercept=False).
-        covariance_ (ndarray): Posterior covariance of the weights for relevance vectors.
-        alpha_ (ndarray): Precision (inverse variance) for the weights.
+        covariance_ (ndarray of shape (n_relevance, n_relevance)): Posterior covariance of the weights for relevance vectors.
+        alpha_ (ndarray of shape (1, n_relevance)): Precision (inverse variance) for the weights.
         beta_ (float): Noise precision (inverse noise variance).
         n_relevance_ (int): Number of relevance vectors.
         n_iter_ (int): Number of iterations run by the SparseBayes solver.
         fit_status_ (int): Status code returned by the SparseBayes solver.
-        scores_ (ndarray): Log marginal likelihood values at each iteration.
+        scores_ (ndarray of shape (n_iter,)): Log marginal likelihood values at each iteration.
     """
 
     def __init__(

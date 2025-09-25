@@ -31,6 +31,7 @@ dev = [
   "wheel",
   "packaging",
   "pre-commit",
+  "pandas",
 ]
 
 [project.urls]
