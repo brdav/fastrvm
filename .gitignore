@@ -1,0 +1,41 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+*.so
+*.dylib
+*.dll
+.pytest_cache/
+*.nbi
+*.nbc
+*.ipynb_checkpoints/
+.DS_Store
+cpp/build/
+wheelhouse/
+cmake-build-*/# ignore IDE files
+*.pyc
+*.swp
+.idea/
+.vscode/
+__pycache__/
+*.egg-info/
+
+# extra module
+build/
+dist/
+.ninja*
+build.ninja
+*.so
+*.o
+
+# jupyter
+.ipynb_checkpoints/
+.venv/
+notebooks/
+
+# ignore everything in extern...
+/extern/*
+# ...but keep carma submodule
+!/extern/carma/
+!/extern/carma/**
