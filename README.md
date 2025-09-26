@@ -7,7 +7,7 @@
 
 A fast and clean implementation of the Relevance Vector Machine (RVM).
 
-![fastrvm teaser](docs/teaser.png)
+![fastrvm teaser](https://raw.githubusercontent.com/brdav/fastrvm/main/docs/teaser.png)
 
 **fastrvm** implements Tipping's "sparse Bayesian learning" algorithm [2] in a high-performance C++ core and exposes scikit-learn-compatible Python wrappers for:
 
