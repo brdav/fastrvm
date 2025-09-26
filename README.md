@@ -7,6 +7,8 @@
 
 A fast and clean implementation of the Relevance Vector Machine (RVM).
 
+![fastrvm teaser](docs/teaser.png)
+
 **fastrvm** implements Tipping's "sparse Bayesian learning" algorithm [2] in a high-performance C++ core and exposes scikit-learn-compatible Python wrappers for:
 
 - RVR — relevance vector regression
@@ -14,7 +16,7 @@ A fast and clean implementation of the Relevance Vector Machine (RVM).
 
 Key benefits
 
-- Fast training and prediction due to the greedy learning algorithm and a tuned C++ linear-algebra core (Armadillo + BLAS/LAPACK).
+- Fast training and prediction due to the greedy learning algorithm and a tuned C++ linear-algebra core (Armadillo + Einsmallen for optimization).
 - Sparse models that automatically select a small set of relevance vectors.
 - scikit-learn-compatible Python wrappers: plug into pipelines, grid search, and common tooling.
 
@@ -60,10 +62,9 @@ print('5-fold accuracy:', scores.mean())
 Notes on the Python API
 
 - Classes: `RVR` and `RVC` available from `fastrvm`.
-- Estimator API: implements scikit-learn conventions (`fit`, `predict`, `get_params`, `set_params`). `RVC` also implements `predict_proba`.
+- Estimator API: implements scikit-learn conventions (`fit`, `predict`, etc.).
 - Kernel options: `rbf`, `linear`, `poly`, `precomputed` (scikit-learn-style names). Various kernel hyperparameters such as `gamma`, `degree`, and `coef0` are supported.
 - Multiclass classification: For efficiency reasons `RVC` uses a one-vs-rest classifier for multiclass classification.
-- Convergence and control: `tol`, `max_iter`, and `verbose` control the greedy update loop and logging.
 
 See `docs/fastrvm.md` for a short reference doc.
 
