@@ -4,8 +4,8 @@ build-backend = "scikit_build_core.build"
 
 [project]
 name = "fastrvm"
-version = "0.1.0"
-description = "Fast Automatic Relevance Determination (ARD) regression and classification in Python"
+version = "0.1.1"
+description = "Relevance Vector Machine in Python with a C++ Core"
 readme = "README.md"
 license = {file = "LICENSE"}
 requires-python = ">=3.9"
