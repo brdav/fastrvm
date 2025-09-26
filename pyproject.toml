@@ -22,7 +22,7 @@ classifiers = [
   "Topic :: Scientific/Engineering :: Mathematics"
 ]
 keywords = ["machine learning", "bayesian learning", "automatic relevance determination", "relevance vector machine", "sparse learning", "regression", "classification", "python", "c++"]
-dependencies = ["numpy>=1.22", "scikit-learn>=1.7.1"]
+dependencies = ["numpy>=1.22", "scikit-learn>=1.6.1"]
 
 [project.optional-dependencies]
 dev = [
