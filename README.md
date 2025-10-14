@@ -75,7 +75,6 @@ For development install from source:
 ```bash
 git clone https://github.com/brdav/fastrvm.git
 cd fastrvm
-git submodule update --init --recursive
 python -m pip install -e '.[dev]'
 ```
 

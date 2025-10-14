@@ -190,14 +190,14 @@ class RVC(ClassifierMixin, BaseEstimator):
 
         if self.fit_intercept:
             self.relevance_ = relevant_idx[:-1].ravel()
-            self.dual_coef_ = mean[:-1].T
-            self.intercept_ = mean[-1]
-            self.alpha_ = alpha[:-1].T
+            self.dual_coef_ = mean[:-1].reshape(1, -1)
+            self.intercept_ = np.array([mean[-1]])
+            self.alpha_ = alpha[:-1].reshape(1, -1)
         else:
             self.relevance_ = relevant_idx.ravel()
-            self.dual_coef_ = mean.T
+            self.dual_coef_ = mean.reshape(1, -1)
             self.intercept_ = np.array([0.0])
-            self.alpha_ = alpha.T
+            self.alpha_ = alpha.reshape(1, -1)
 
         self.relevance_vectors_ = X[self.relevance_]
         self.n_relevance_ = np.array([len(self.relevance_)])

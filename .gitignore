@@ -33,9 +33,3 @@ build.ninja
 .ipynb_checkpoints/
 .venv/
 notebooks/
-
-# ignore everything in extern...
-/extern/*
-# ...but keep carma submodule
-!/extern/carma/
-!/extern/carma/**

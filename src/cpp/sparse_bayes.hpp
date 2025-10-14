@@ -94,7 +94,7 @@ class SparseBayes {
     arma::vec relevance_factor;
     arma::mat b_basis_Phi;
     arma::vec b_vec;
-    double log_ml;     // Log marginal likelihood.
+    double log_ml;    // Log marginal likelihood.
     arma::vec gamma;  // Well-determinedness.
   };
 

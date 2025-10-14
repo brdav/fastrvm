@@ -44,7 +44,8 @@ void SparseBayes::Inference(const arma::mat& basis_in,
   // Initialize the model.
   double log_ml;
   arma::vec gamma;
-  ModelState state = Initialize(basis, basis_targets, targets_in, log_ml, gamma);
+  ModelState state =
+      Initialize(basis, basis_targets, targets_in, log_ml, gamma);
 
   arma::uword N = basis.n_rows;
   arma::uword M = state.Phi.n_cols;

@@ -68,9 +68,10 @@ void SparseBayes::UpdateAfterAction(
 // modifying selected_action.
 void SparseBayes::MaybeUpdateBeta(ModelState &state, const arma::mat &basis,
                                   const arma::vec &targets_in,
-                                  const arma::mat &basis_targets, double &log_ml,
-                                  arma::vec &gamma, int &ll_update_count,
-                                  int iter, Action &selected_action) {
+                                  const arma::mat &basis_targets,
+                                  double &log_ml, arma::vec &gamma,
+                                  int &ll_update_count, int iter,
+                                  Action &selected_action) {
   if (likelihood_ != Likelihood::kGaussian) {
     throw std::logic_error(
         "MaybeUpdateBeta called for non-Gaussian likelihood");

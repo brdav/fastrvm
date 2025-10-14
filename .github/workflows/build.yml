@@ -9,8 +9,6 @@ jobs:
         os: [ubuntu-latest, macos-latest]  # skip Windows
     steps:
       - uses: actions/checkout@v4
-        with:
-          submodules: recursive  # For CARMA submodule
       - uses: actions/setup-python@v4
       - run: pip install cibuildwheel
       - run: cibuildwheel --output-dir wheelhouse
