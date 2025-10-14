@@ -81,7 +81,7 @@ python -m pip install -e '.[dev]'
 Minimum build dependencies
 
 - CMake >= 3.18
-- Python >= 3.9 (development headers)
+- Python >= 3.10 (development headers)
 - C++17-capable compiler (clang, gcc, or MSVC)
 - BLAS/LAPACK implementation (OpenBLAS, MKL, or Accelerate)
 
