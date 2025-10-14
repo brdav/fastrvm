@@ -42,9 +42,9 @@ void SparseBayes::Inference(const arma::mat& basis_in,
   arma::mat basis_targets = basis.t() * targets_in;
 
   // Initialize the model.
-  double logML;
-  arma::vec Gamma;
-  ModelState state = Initialize(basis, basis_targets, targets_in, logML, Gamma);
+  double log_ml;
+  arma::vec gamma;
+  ModelState state = Initialize(basis, basis_targets, targets_in, log_ml, gamma);
 
   arma::uword N = basis.n_rows;
   arma::uword M = state.Phi.n_cols;
@@ -60,19 +60,19 @@ void SparseBayes::Inference(const arma::mat& basis_in,
 
   int iter = 0;
   while (iter < iterations_) {
-    arma::vec DeltaML = arma::zeros<arma::vec>(M_full);
+    arma::vec delta_ml = arma::zeros<arma::vec>(M_full);
     arma::ivec action_vec =
         arma::ones<arma::ivec>(M_full) * static_cast<int>(Action::kNone);
 
     // Evaluate candidate changes using helper functions.
-    EvaluateReestimates(state, DeltaML, action_vec);
-    EvaluateDeletions(state, DeltaML, action_vec);
-    EvaluateAdditions(state, DeltaML, action_vec);
+    EvaluateReestimates(state, delta_ml, action_vec);
+    EvaluateDeletions(state, delta_ml, action_vec);
+    EvaluateAdditions(state, delta_ml, action_vec);
 
     // Fix bias column (if present).
     if (use_bias_) {
       arma::uword bias_idx = M_full - 1;
-      DeltaML(bias_idx) = 0.0;
+      delta_ml(bias_idx) = 0.0;
       action_vec(bias_idx) = static_cast<int>(Action::kNone);
     }
     bool any_to_add = arma::any(action_vec == static_cast<int>(Action::kAdd));
@@ -82,22 +82,22 @@ void SparseBayes::Inference(const arma::mat& basis_in,
     if ((any_to_add && prioritize_addition_) ||
         (any_to_del && prioritize_deletion_)) {
       // We will not perform re-estimation in this iteration.
-      DeltaML
+      delta_ml
           .elem(arma::find(action_vec == static_cast<int>(Action::kReestimate)))
           .zeros();
       if (any_to_add && prioritize_addition_ && !prioritize_deletion_) {
-        DeltaML
+        delta_ml
             .elem(arma::find(action_vec == static_cast<int>(Action::kDelete)))
             .zeros();
       } else if (any_to_del && prioritize_deletion_ && !prioritize_addition_) {
-        DeltaML.elem(arma::find(action_vec == static_cast<int>(Action::kAdd)))
+        delta_ml.elem(arma::find(action_vec == static_cast<int>(Action::kAdd)))
             .zeros();
       }
     }
 
-    arma::uword nu = DeltaML.index_max();
+    arma::uword nu = delta_ml.index_max();
     Action selected_action = static_cast<Action>(action_vec(nu));
-    double delta_log_marginal = DeltaML(nu);
+    double delta_log_marginal = delta_ml(nu);
 
     arma::vec Phi_vec = basis.col(nu);
     double new_alpha =
@@ -135,32 +135,32 @@ void SparseBayes::Inference(const arma::mat& basis_in,
     M = state.Phi.n_cols;
 
     UpdateAfterAction(state, selected_action, basis, targets_in, basis_targets,
-                      logML, Gamma, delta_log_marginal, ll_update_count);
+                      log_ml, gamma, delta_log_marginal, ll_update_count);
 
     // Beta update (Gaussian case only).
     if (likelihood_ == Likelihood::kGaussian) {
-      MaybeUpdateBeta(state, basis, targets_in, basis_targets, logML, Gamma,
+      MaybeUpdateBeta(state, basis, targets_in, basis_targets, log_ml, gamma,
                       ll_update_count, iter, selected_action);
     }
 
     if (verbose_ && (iter % 10 == 0)) {
       if (likelihood_ == Likelihood::kGaussian) {
         printf(
-            "Iter %3d: M=%3llu, L=%.6f, Gamma=%.2f, s=%.3f, act=%d on %llu "
+            "Iter %3d: M=%3llu, L=%.6f, gamma=%.2f, s=%.3f, act=%d on %llu "
             "(%g)\n",
-            iter, static_cast<unsigned long long>(M), logML / N,
-            arma::sum(Gamma), std::sqrt(1 / state.beta),
+            iter, static_cast<unsigned long long>(M), log_ml / N,
+            arma::sum(gamma), std::sqrt(1 / state.beta),
             static_cast<int>(selected_action),
             static_cast<unsigned long long>(nu), delta_log_marginal);
       } else {
-        printf("Iter %3d: M=%3llu, L=%.6f, Gamma=%.2f, act=%d on %llu (%g)\n",
-               iter, static_cast<unsigned long long>(M), logML / N,
-               arma::sum(Gamma), static_cast<int>(selected_action),
+        printf("Iter %3d: M=%3llu, L=%.6f, gamma=%.2f, act=%d on %llu (%g)\n",
+               iter, static_cast<unsigned long long>(M), log_ml / N,
+               arma::sum(gamma), static_cast<int>(selected_action),
                static_cast<unsigned long long>(nu), delta_log_marginal);
       }
     }
 
-    log_ml_trace(iter) = logML;
+    log_ml_trace(iter) = log_ml;
 
     if (selected_action == Action::kTerminate) {
       if (verbose_) {
@@ -225,8 +225,8 @@ void SparseBayes::Inference(const arma::mat& basis_in,
 SparseBayes::ModelState SparseBayes::Initialize(const arma::mat& basis,
                                                 const arma::vec& basis_targets,
                                                 const arma::vec& targets,
-                                                double& logML,
-                                                arma::vec& Gamma) {
+                                                double& log_ml,
+                                                arma::vec& gamma) {
   constexpr double kGaussianSnrInit = 0.1;
   constexpr double kInitAlphaMax = 1e3;
   constexpr double kInitAlphaMin = 1e-3;
@@ -325,8 +325,8 @@ SparseBayes::ModelState SparseBayes::Initialize(const arma::mat& basis,
       ComputeFullStatistics(basis, Phi, targets, used_basis_idx, basis_Phi,
                             basis_targets, weights, alpha, beta);
 
-  logML = full_stat.logML;
-  Gamma = full_stat.Gamma;
+  log_ml = full_stat.log_ml;
+  gamma = full_stat.gamma;
 
   ModelState state;
   state.alpha = alpha;
@@ -429,12 +429,12 @@ SparseBayes::FullStatisticsResult SparseBayes::ComputeFullStatistics(
 
   out.relevance_factor = arma::square(out.Q_out) - out.S_out;
 
-  out.logML =
+  out.log_ml =
       data_likelihood - arma::dot(arma::square(out.weights), alpha) / 2.0 +
       arma::sum(arma::log(alpha)) / 2.0 - arma::sum(arma::log(U.diag()));
 
   arma::vec diagC = arma::sum(arma::square(Ui), 1);
-  out.Gamma = arma::ones<arma::vec>(alpha.n_elem) - alpha % diagC;
+  out.gamma = arma::ones<arma::vec>(alpha.n_elem) - alpha % diagC;
 
   return out;
 }

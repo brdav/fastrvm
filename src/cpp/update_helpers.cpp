@@ -12,8 +12,8 @@ namespace sparse_bayes {
 // recompute full statistics; for Gaussian we update via cheaper formulas.
 void SparseBayes::UpdateAfterAction(
     ModelState &state, Action selected_action, const arma::mat &basis,
-    const arma::vec &targets_in, const arma::mat &basis_targets, double &logML,
-    arma::vec &Gamma, double &delta_log_marginal, int &ll_update_count) {
+    const arma::vec &targets_in, const arma::mat &basis_targets, double &log_ml,
+    arma::vec &gamma, double &delta_log_marginal, int &ll_update_count) {
   if (selected_action == Action::kReestimate ||
       selected_action == Action::kAdd || selected_action == Action::kDelete) {
     if (likelihood_ == Likelihood::kGaussian) {
@@ -29,7 +29,7 @@ void SparseBayes::UpdateAfterAction(
 
       state.relevance_factor = arma::square(state.Q_out) - state.S_out;
 
-      Gamma = arma::ones<arma::vec>(state.alpha.n_elem) -
+      gamma = arma::ones<arma::vec>(state.alpha.n_elem) -
               state.alpha % arma::diagvec(state.Sigma);
 
       // Recompute basis_Phi/b_basis_Phi
@@ -54,11 +54,11 @@ void SparseBayes::UpdateAfterAction(
       state.b_basis_Phi = full_stat.b_basis_Phi;
       state.b_vec = full_stat.b_vec;
 
-      Gamma = full_stat.Gamma;
-      delta_log_marginal = full_stat.logML - logML;
+      gamma = full_stat.gamma;
+      delta_log_marginal = full_stat.log_ml - log_ml;
     }
 
-    logML += delta_log_marginal;
+    log_ml += delta_log_marginal;
     ll_update_count++;
   }
 }
@@ -68,8 +68,8 @@ void SparseBayes::UpdateAfterAction(
 // modifying selected_action.
 void SparseBayes::MaybeUpdateBeta(ModelState &state, const arma::mat &basis,
                                   const arma::vec &targets_in,
-                                  const arma::mat &basis_targets, double &logML,
-                                  arma::vec &Gamma, int &ll_update_count,
+                                  const arma::mat &basis_targets, double &log_ml,
+                                  arma::vec &gamma, int &ll_update_count,
                                   int iter, Action &selected_action) {
   if (likelihood_ != Likelihood::kGaussian) {
     throw std::logic_error(
@@ -94,7 +94,7 @@ void SparseBayes::MaybeUpdateBeta(ModelState &state, const arma::mat &basis,
   arma::vec e = targets_in - y;
   double ED = arma::dot(e, e);
 
-  new_beta = (static_cast<double>(N) - arma::sum(Gamma)) / ED;
+  new_beta = (static_cast<double>(N) - arma::sum(gamma)) / ED;
 
   // Bound the change in beta to avoid instability
   new_beta = std::min(new_beta, kBetaMaxFactor / arma::var(targets_in));
@@ -116,8 +116,8 @@ void SparseBayes::MaybeUpdateBeta(ModelState &state, const arma::mat &basis,
     state.relevance_factor = full_stat.relevance_factor;
     state.b_basis_Phi = full_stat.b_basis_Phi;
 
-    logML = full_stat.logML;
-    Gamma = full_stat.Gamma;
+    log_ml = full_stat.log_ml;
+    gamma = full_stat.gamma;
     ll_update_count++;
 
     if (selected_action == Action::kTerminate) {

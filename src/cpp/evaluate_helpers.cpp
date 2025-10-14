@@ -8,8 +8,8 @@
 
 namespace sparse_bayes {
 
-// Evaluate re-estimation candidates and populate DeltaML for re-estimates.
-void SparseBayes::EvaluateReestimates(ModelState &state, arma::vec &DeltaML,
+// Evaluate re-estimation candidates and populate delta_ml for re-estimates.
+void SparseBayes::EvaluateReestimates(ModelState &state, arma::vec &delta_ml,
                                       arma::ivec &action_vec) {
   arma::vec used_factor = state.relevance_factor.elem(state.used_basis_idx);
   arma::uvec i_pos = arma::find(used_factor > kZeroFactor);
@@ -27,13 +27,13 @@ void SparseBayes::EvaluateReestimates(ModelState &state, arma::vec &DeltaML,
     arma::vec denom = delta % S_idx + 1.0;
     arma::vec term = numer / denom - arma::log(1.0 + S_idx % delta);
 
-    DeltaML.elem(reest_idx) = term / 2.0;
+    delta_ml.elem(reest_idx) = term / 2.0;
     action_vec.elem(reest_idx).fill(static_cast<int>(Action::kReestimate));
   }
 }
 
 // Evaluate deletion candidates and set action_vec entries for deletions.
-void SparseBayes::EvaluateDeletions(ModelState &state, arma::vec &DeltaML,
+void SparseBayes::EvaluateDeletions(ModelState &state, arma::vec &delta_ml,
                                     arma::ivec &action_vec) {
   arma::vec used_factor = state.relevance_factor.elem(state.used_basis_idx);
   arma::uvec i_neg = arma::find(used_factor <= kZeroFactor);
@@ -47,13 +47,13 @@ void SparseBayes::EvaluateDeletions(ModelState &state, arma::vec &DeltaML,
     arma::vec term = (arma::square(Q_idx) / (S_idx + alpha_used)) -
                      arma::log(S_idx / alpha_used + 1.0);
 
-    DeltaML.elem(del_idx) = -term / 2.0;
+    delta_ml.elem(del_idx) = -term / 2.0;
     action_vec.elem(del_idx).fill(static_cast<int>(Action::kDelete));
   }
 }
 
-// Evaluate additions: set DeltaML and action_vec for candidate additions.
-void SparseBayes::EvaluateAdditions(ModelState &state, arma::vec &DeltaML,
+// Evaluate additions: set delta_ml and action_vec for candidate additions.
+void SparseBayes::EvaluateAdditions(ModelState &state, arma::vec &delta_ml,
                                     arma::ivec &action_vec) {
   arma::uvec add_mask =
       arma::conv_to<arma::uvec>::from(state.relevance_factor > kZeroFactor);
@@ -72,7 +72,7 @@ void SparseBayes::EvaluateAdditions(ModelState &state, arma::vec &DeltaML,
     arma::vec quot = arma::square(Q_idx) / S_idx;
     arma::vec delta = (quot - 1.0 - arma::log(quot)) / 2.0;
 
-    DeltaML.elem(add_idx) = delta;
+    delta_ml.elem(add_idx) = delta;
     action_vec.elem(add_idx).fill(static_cast<int>(Action::kAdd));
   }
 }

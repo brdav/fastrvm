@@ -70,8 +70,8 @@ class SparseBayes {
 
   // Initialize model variables and do basic basis preprocessing.
   ModelState Initialize(const arma::mat& basis, const arma::vec& basis_targets,
-                        const arma::vec& targets, double& logML,
-                        arma::vec& Gamma);
+                        const arma::vec& targets, double& log_ml,
+                        arma::vec& gamma);
 
   // Re-estimate a basis function's alpha.
   void ReestimateBasis(ModelState& state, arma::uword j, double new_alpha);
@@ -94,8 +94,8 @@ class SparseBayes {
     arma::vec relevance_factor;
     arma::mat b_basis_Phi;
     arma::vec b_vec;
-    double logML;     // Log marginal likelihood.
-    arma::vec Gamma;  // Well-determinedness.
+    double log_ml;     // Log marginal likelihood.
+    arma::vec gamma;  // Well-determinedness.
   };
 
   // Mutable model state used across helper functions to avoid long parameter
@@ -126,11 +126,11 @@ class SparseBayes {
       const arma::vec& alpha, double beta);
 
   // Helpers to split the main optimization loop into smaller pieces.
-  void EvaluateReestimates(ModelState& state, arma::vec& DeltaML,
+  void EvaluateReestimates(ModelState& state, arma::vec& delta_ml,
                            arma::ivec& action);
-  void EvaluateDeletions(ModelState& state, arma::vec& DeltaML,
+  void EvaluateDeletions(ModelState& state, arma::vec& delta_ml,
                          arma::ivec& action);
-  void EvaluateAdditions(ModelState& state, arma::vec& DeltaML,
+  void EvaluateAdditions(ModelState& state, arma::vec& delta_ml,
                          arma::ivec& action);
 
   // Perform an action (reestimate/add/delete) and update local counters.
@@ -140,11 +140,11 @@ class SparseBayes {
                      int& delete_count, int& update_count);
 
   // Update statistics (possibly recomputing full stats) after an action and
-  // update log marginal likelihood and Gamma as needed.
+  // update log marginal likelihood and gamma as needed.
   void UpdateAfterAction(ModelState& state, Action selected_action,
                          const arma::mat& basis, const arma::vec& targets_in,
-                         const arma::mat& basis_targets, double& logML,
-                         arma::vec& Gamma, double& delta_log_marginal,
+                         const arma::mat& basis_targets, double& log_ml,
+                         arma::vec& gamma, double& delta_log_marginal,
                          int& ll_update_count);
 
   // Update beta (Gaussian noise precision) when appropriate. This may recompute
@@ -152,8 +152,8 @@ class SparseBayes {
   // beta update is large.
   void MaybeUpdateBeta(ModelState& state, const arma::mat& basis,
                        const arma::vec& targets_in,
-                       const arma::mat& basis_targets, double& logML,
-                       arma::vec& Gamma, int& ll_update_count, int iter,
+                       const arma::mat& basis_targets, double& log_ml,
+                       arma::vec& gamma, int& ll_update_count, int iter,
                        Action& selected_action);
 
   // Handle alignment checks and deferrals for candidate additions/deletions.

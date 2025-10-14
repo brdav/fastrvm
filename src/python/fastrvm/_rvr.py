@@ -105,10 +105,7 @@ class RVR(RegressorMixin, BaseEstimator):
         Returns:
             self: Fitted estimator.
         """
-
-        # Check that X and y have correct shape
         X, y = validate_data(self, X, y)
-        # tell mypy these are ndarrays after validation
         X = cast(NDArray, X)
         y = cast(NDArray, y)
 
@@ -147,23 +144,25 @@ class RVR(RegressorMixin, BaseEstimator):
         self.n_iter_ = result["n_iter"]
         self.fit_status_ = result["status"]
         self.scores_ = result["log_marginal_likelihood_trace"]
-        self.alpha_ = result["alpha"].T  # shape (1, n_relevance)
         self.beta_ = result["beta"]
 
         mean = result["mean"]
         covariance = result["covariance"]
         relevant_idx = result["relevant_idx"]
+        alpha = result["alpha"]
 
         if self.fit_intercept:
             self.relevance_ = relevant_idx[:-1].ravel()
             self.covariance_ = covariance[:-1, :-1]
             self.dual_coef_ = mean[:-1].T
             self.intercept_ = mean[-1]
+            self.alpha_ = alpha[:-1].T
         else:
             self.relevance_ = relevant_idx.ravel()
             self.covariance_ = covariance
             self.dual_coef_ = mean.T
             self.intercept_ = 0.0
+            self.alpha_ = alpha.T
 
         self.relevance_vectors_ = X[self.relevance_]
         self.n_relevance_ = len(self.relevance_)
@@ -189,6 +188,7 @@ class RVR(RegressorMixin, BaseEstimator):
         check_is_fitted(self)
         X = validate_data(self, X, reset=False)
         X = cast(NDArray, X)
+        
         Phi = pairwise_kernels(
             X,
             self.relevance_vectors_,

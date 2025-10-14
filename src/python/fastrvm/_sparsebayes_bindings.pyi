@@ -10,7 +10,7 @@ import enum
 from typing import Optional, TypedDict
 
 import numpy as np
-from numpy.typing import ArrayLike, NDArray
+from numpy.typing import NDArray
 
 __all__ = ["Likelihood", "SparseBayes"]
 
@@ -48,4 +48,4 @@ class SparseBayes:
         fixed_noise: bool = False,
         noise_std: Optional[float] = None,
     ) -> None: ...
-    def inference(self, basis: ArrayLike, targets: ArrayLike) -> SparseBayesResult: ...
+    def inference(self, basis: NDArray, targets: NDArray) -> SparseBayesResult: ...

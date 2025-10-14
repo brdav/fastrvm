@@ -183,7 +183,6 @@ class RVC(ClassifierMixin, BaseEstimator):
         self.n_iter_ = np.array([result["n_iter"]])
         self.fit_status_ = result["status"]
         self.scores_ = result["log_marginal_likelihood_trace"]
-        self.alpha_ = result["alpha"].T  # shape (1, n_relevance)
 
         mean = result["mean"]
         relevant_idx = result["relevant_idx"]
@@ -244,8 +243,7 @@ class RVC(ClassifierMixin, BaseEstimator):
         return logits
 
     def predict(self, X: NDArray) -> NDArray:
-        """Predict using the trained relevance vector model. For the
-        one-class setting, the model returns 0 or 1.
+        """Predict using the trained relevance vector model.
 
         Args:
             X: Input samples, shape (n_samples, n_features).
