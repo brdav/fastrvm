@@ -1,5 +1,5 @@
 [build-system]
-requires = ["scikit-build-core>=0.9.0", "pybind11>=2.11", "numpy"]
+requires = ["scikit-build-core>=0.9.0", "pybind11>=2.13", "numpy"]
 build-backend = "scikit_build_core.build"
 
 [project]
@@ -8,13 +8,15 @@ version = "0.1.2"
 description = "Relevance Vector Machine in Python with a C++ Core"
 readme = "README.md"
 license = {file = "LICENSE"}
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 authors = [ { name = "brdav", email = "" } ]
 classifiers = [
   "Programming Language :: Python :: 3",
-  "Programming Language :: Python :: 3.9",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
   "Programming Language :: C++",
   "License :: OSI Approved :: MIT License",
   "Operating System :: OS Independent",
@@ -22,11 +24,15 @@ classifiers = [
   "Topic :: Scientific/Engineering :: Mathematics"
 ]
 keywords = ["machine learning", "bayesian learning", "automatic relevance determination", "relevance vector machine", "sparse learning", "regression", "classification", "python", "c++"]
-dependencies = ["numpy>=1.22", "scikit-learn>=1.6.1"]
+dependencies = [
+  "numpy>=1.24.1; python_version < '3.13'",
+  "numpy>=2.3.2; python_version >= '3.13'",
+  "scikit-learn>=1.7.2",
+]
 
 [project.optional-dependencies]
 dev = [
-  "pytest>=7",
+  "pytest>=8",
   "build",
   "wheel",
   "packaging",
@@ -45,7 +51,7 @@ wheel.expand-macos-universal-tags = true
 wheel.packages = ["src/python/fastrvm"]
 
 [tool.cibuildwheel]
-build = "cp39-* cp310-* cp311-*"
+build = "cp310-* cp311-* cp312-* cp313-* cp314-*"
 test-command = "python -c \"import fastrvm; print('Test passed')\""
 skip = "*musllinux*"
 
