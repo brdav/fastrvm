@@ -9,7 +9,7 @@ A fast and clean implementation of the Relevance Vector Machine (RVM).
 
 ![fastrvm teaser](https://raw.githubusercontent.com/brdav/fastrvm/main/docs/teaser.png)
 
-**fastrvm** implements Tipping's "sparse Bayesian learning" algorithm [2] in a high-performance C++ core and exposes scikit-learn-compatible Python wrappers for:
+**fastrvm** implements the accelerated RVM training algorithm described in [3] in a high-performance C++ core and exposes scikit-learn-compatible Python wrappers for:
 
 - RVR — relevance vector regression
 - RVC — relevance vector classification
@@ -68,6 +68,10 @@ Notes on the Python API
 
 See `docs/fastrvm.md` for a short reference doc.
 
+## Limitations of the RVM
+
+While powerful and often very sparse, the RVM can be viewed as a finite, data-dependent Gaussian process (GP): the kernel is a weighted sum of basis functions centred on the training inputs (see *Rasmussen and Williams, 2006*, chapter 6.6). Because the prior then depends on the observed inputs and the kernel is degenerate (finite rank), this departs from a strict Bayesian GP interpretation. With localized bases (e.g., RBFs), predictions far from any relevance vector can become spuriously overconfident: both the mean and the predictive variance may collapse toward zero (or the estimated noise level) even in clear extrapolation regions. This behavior is a modeling artifact of the degenerate kernel—computationally attractive, but it can harm uncertainty quantification in out-of-support areas.
+
 ## Installation from Source
 
 For development install from source:
@@ -100,9 +104,11 @@ Key references:
 
 1. Tipping, M. E. (2001). Sparse Bayesian Learning and the Relevance Vector Machine. Journal of Machine Learning Research, 1, 211–244.
 
-2. Tipping, M. E. & Faul, A. C. (2003). Fast Marginal Likelihood Maximisation for Sparse Bayesian Models. Proceedings of the 4th International Workshop on Artificial Intelligence and Statistics (AISTATS / PMLR), pages 276–283, 2003.
+2. Faul, A. C., & Tipping, M. E. (2002). Analysis of Sparse Bayesian Learning. In Advances in Neural Information Processing Systems 14 (NeurIPS 2002).
 
-This implementation follows the ideas and practical choices from the SparseBayes (v2.0) MATLAB package by Michael Tipping — see the [SparseBayes v2.0 download page](https://www.miketipping.com/downloads.htm). Please cite [1] for the core algorithm and [2] for the marginal-likelihood acceleration where applicable.
+3. Tipping, M. E., & Faul, A. C. (2003). Fast Marginal Likelihood Maximisation for Sparse Bayesian Models. In Proceedings of the 4th International Workshop on Artificial Intelligence and Statistics (AISTATS). PMLR, 276–283.
+
+This implementation follows the ideas and practical choices from the SparseBayes (v2.0) MATLAB package by Michael Tipping — see the [SparseBayes v2.0 download page](https://www.miketipping.com/downloads.htm). Please cite [1] for the core algorithm and [3] for the marginal-likelihood acceleration where applicable.
 
 ## License
 
