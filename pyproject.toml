@@ -4,7 +4,7 @@ build-backend = "scikit_build_core.build"
 
 [project]
 name = "fastrvm"
-version = "0.1.4"
+version = "0.1.5"
 description = "Relevance Vector Machine in Python with a C++ Core"
 readme = "README.md"
 license = {file = "LICENSE"}
@@ -34,8 +34,9 @@ keywords = [
   "classification",
 ]
 dependencies = [
-  "numpy>=1.24.1",
-  "scikit-learn>=1.6.1",
+  "numpy>=1.24.1; python_version < '3.13'",
+  "numpy>=2.3.2; python_version >= '3.13'",
+  "scikit-learn>=1.7.2",
 ]
 
 [project.optional-dependencies]
