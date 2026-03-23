@@ -11,15 +11,18 @@ include(FetchContent)
 
 # --- Armadillo vendoring using FetchContent ------------------------------
 set(ARMADILLO_VERSION "15.0.2")
-set(HEADER_ONLY ON CACHE BOOL "Build Armadillo header-only")
 
 FetchContent_Declare(
   armadillo_vendored
   URL "https://sourceforge.net/projects/arma/files/armadillo-${ARMADILLO_VERSION}.tar.xz/download"
   URL_HASH SHA256=990ab4ccb7eff1b6d70409e9aa7fa4119877ac5f5d10ba219e98460ab3e4d6eb
   DOWNLOAD_EXTRACT_TIMESTAMP true
+  SOURCE_SUBDIR "PATH_THAT_DOES_NOT_EXIST" # Prevents automatic add_subdirectory
 )
 FetchContent_MakeAvailable(armadillo_vendored)
+
+find_package(BLAS REQUIRED)
+find_package(LAPACK REQUIRED)
 
 # --- Ensmallen vendoring using FetchContent ------------------------------
 set(ENSMALLEN_VERSION "2.22.2")
@@ -44,11 +47,18 @@ add_library(sparsebayes STATIC
   ${CMAKE_CURRENT_SOURCE_DIR}/action_helpers.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/laplace.cpp
 )
-target_include_directories(sparsebayes PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+
+# Ignore Armadillo's wrapper and use the linked BLAS/LAPACK
+target_compile_definitions(sparsebayes PUBLIC ARMA_DONT_USE_WRAPPER)
+target_include_directories(sparsebayes PUBLIC 
+  ${CMAKE_CURRENT_SOURCE_DIR}
+  ${armadillo_vendored_SOURCE_DIR}/include
+)
+target_link_libraries(sparsebayes PUBLIC
+  ${BLAS_LIBRARIES}
+  ${LAPACK_LIBRARIES}
+  ensmallen
+)
 
 # Ensure the static library is built as PIC so it can be linked into a shared module
 set_target_properties(sparsebayes PROPERTIES POSITION_INDEPENDENT_CODE ON)
-
-# Link to external dependencies
-target_link_libraries(sparsebayes PUBLIC armadillo)
-target_link_libraries(sparsebayes PUBLIC ensmallen)

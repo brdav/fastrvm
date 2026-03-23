@@ -34,9 +34,8 @@ keywords = [
   "classification",
 ]
 dependencies = [
-  "numpy>=1.24.1; python_version < '3.13'",
-  "numpy>=2.3.2; python_version >= '3.13'",
-  "scikit-learn>=1.7.2",
+  "numpy>=1.24.1",
+  "scikit-learn>=1.6.1",
 ]
 
 [project.optional-dependencies]
@@ -63,6 +62,9 @@ wheel.packages = ["src/python/fastrvm"]
 build = "cp310-* cp311-* cp312-* cp313-* cp314-*"
 test-command = "python -c \"import fastrvm; print('Test passed')\""
 skip = "*musllinux*"
+
+[tool.cibuildwheel.linux]
+before-all = "yum install -y lapack-devel openblas-devel"
 
 [tool.pytest.ini_options]
 minversion = "7.0"
