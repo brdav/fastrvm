@@ -4,7 +4,7 @@ build-backend = "scikit_build_core.build"
 
 [project]
 name = "fastrvm"
-version = "0.1.3"
+version = "0.1.4"
 description = "Relevance Vector Machine in Python with a C++ Core"
 readme = "README.md"
 license = {file = "LICENSE"}
